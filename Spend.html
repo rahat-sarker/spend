@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spend</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Spend">
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--tx:#1c1c1e;--mu:#8a8a8e;--ac:#0a84ff;--ln:#e5e5ea;--rd:#ff3b30;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--card:#1c1c1e;--tx:#f2f2f7;--mu:#98989d;--ln:#2c2c2e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#000;--card:#1c1c1e;--tx:#f2f2f7;--mu:#98989d;--ln:#2c2c2e;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-bottom:84px}
+.wrap{max-width:520px;margin:0 auto;padding:16px}
+h1{font-size:28px;margin:8px 0 12px}
+.card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px}
+.big{font-size:40px;font-weight:700;letter-spacing:-1px}
+.mu{color:var(--mu);font-size:13px}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1}
+input,select{width:100%;font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--ln);border-radius:12px;padding:12px;margin-top:8px}
+#amt{font-size:32px;font-weight:700;text-align:center}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{border:1px solid var(--ln);background:var(--bg);color:var(--tx);border-radius:20px;padding:8px 12px;font:inherit;font-size:14px}
+.chip.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn{width:100%;background:var(--ac);color:#fff;border:0;border-radius:14px;padding:15px;font:inherit;font-weight:600;font-size:17px;margin-top:12px}
+.btn.sec{background:var(--bg);color:var(--ac);border:1px solid var(--ln);font-size:14px;padding:10px;margin-top:8px}
+.item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--ln)}
+.item:last-child{border:0}
+.ico{font-size:22px;width:40px;height:40px;border-radius:12px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex:none}
+.item .m{flex:1;min-width:0}.item .m b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.del{background:none;border:0;color:var(--rd);font-size:18px;padding:6px}
+.day{font-size:13px;color:var(--mu);margin:16px 4px 6px;display:flex;justify-content:space-between}
+.bar{height:8px;border-radius:4px;background:var(--ac);margin-top:4px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--ln);display:flex;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;background:none;border:0;color:var(--mu);padding:10px 0 8px;font:inherit;font-size:12px}
+nav button.on{color:var(--ac);font-weight:600}
+nav span{display:block;font-size:22px}
+.timer{font-size:48px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <section id="add">
+  <h1>Add spending</h1>
+  <div class="card">
+   <input id="amt" type="number" inputmode="decimal" placeholder="0" aria-label="Amount">
+   <div class="chips" id="cats"></div>
+   <input id="where" list="places" placeholder="Where? (shop, place, app…)" autocomplete="off">
+   <datalist id="places"></datalist>
+   <input id="note" placeholder="Note (optional)">
+   <input id="when" type="datetime-local" aria-label="Date and time">
+   <button class="btn sec" id="gps">📍 Tag my current location</button>
+   <div class="mu" id="gpsout" style="margin-top:6px"></div>
+   <button class="btn" id="save">Save expense</button>
+  </div>
+  <div class="card"><div class="mu">Today</div><div class="big" id="today">0</div><div class="mu" id="todayn"></div></div>
+ </section>
+ <section id="hist" class="hide"><h1>History</h1><div id="list"></div></section>
+ <section id="time" class="hide">
+  <h1>Time</h1>
+  <div class="card">
+   <div class="mu" id="tstate">What are you doing?</div>
+   <div class="timer" id="tclock">00:00:00</div>
+   <div class="chips" id="fields"></div>
+   <input id="tnote" placeholder="Note (optional)">
+   <button class="btn" id="tbtn">Start</button>
+  </div>
+  <div class="card"><b>Today by field</b><div id="ttoday"></div></div>
+  <div class="card"><b>Add time you forgot to track</b>
+   <div class="row"><input id="mmin" type="number" inputmode="numeric" placeholder="Minutes (selected field)"><button class="btn sec" id="madd" style="flex:none;width:90px">Add</button></div></div>
+  <div class="card"><b>Recent sessions</b><div id="tlist"></div></div>
+ </section>
+ <section id="ins" class="hide">
+  <h1>Insights</h1>
+  <div class="row" style="margin-bottom:12px"><select id="range" style="margin:0"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="365">Last year</option><option value="0">All time</option></select></div>
+  <div class="card"><div class="mu">Total</div><div class="big" id="tot">0</div><div class="mu" id="avg"></div></div>
+  <div class="card"><b>By category</b><div id="bycat"></div></div>
+  <div class="card"><b>Top places</b><div id="byplace"></div></div>
+  <div class="card"><b>Time by field</b><div class="mu" id="ttot"></div><div id="bytime"></div></div>
+  <button class="btn sec" id="csv">Export / save to Files or Drive</button>
+ </section>
+</div>
+<nav>
+ <button data-t="add" class="on"><span>＋</span>Add</button>
+ <button data-t="hist"><span>☰</span>History</button>
+ <button data-t="time"><span>⏱</span>Time</button>
+ <button data-t="ins"><span>◔</span>Insights</button>
+</nav>
+<script>
+const CATS=[["Food","🍔"],["Transport","🚌"],["Groceries","🛒"],["Bills","💡"],["Shopping","🛍️"],["Health","💊"],["Study","📚"],["Fun","🎮"],["Other","✨"]];
+const CUR="৳";
+let items=[],cat="Food",geo=null,doc=null,LS="spend.items.v1";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=n=>CUR+Number(n).toLocaleString("en-US",{maximumFractionDigits:2});
+const icon=c=>(CATS.find(x=>x[0]===c)||["","✨"])[1];
+const pad=n=>String(n).padStart(2,"0");
+function nowLocal(){const d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes())}
+function dayKey(ts){const d=new Date(ts);return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+
+function loadLocal(){try{return JSON.parse(localStorage.getItem(LS)||"[]")}catch(e){return[]}}
+function persist(){
+  try{localStorage.setItem(LS,JSON.stringify(items));localStorage.setItem("spend.sessions.v1",JSON.stringify(sessions));localStorage.setItem("spend.active.v1",JSON.stringify(active))}catch(e){}
+  if(doc){doc.set({items,sessions}).catch(()=>{})}
+}
+async function initDb(){
+  try{
+    const db=await claude.use("db"),user=await claude.use("user");
+    if(!db||!user)return;
+    const id=await user.id();if(!id)return;
+    doc=db.collection("data/users/"+id).doc("ledger");
+    const t=setTimeout(()=>{},10000);
+    const snap=await doc.get();clearTimeout(t);
+    if(snap.exists&&snap.data()&&Array.isArray(snap.data().items)){
+      const remote=snap.data().items,seen=new Set(remote.map(x=>x.id));
+      items=remote.concat(items.filter(x=>!seen.has(x.id)));
+      const rs=Array.isArray(snap.data().sessions)?snap.data().sessions:[],ss=new Set(rs.map(x=>x.id));
+      sessions=rs.concat(sessions.filter(x=>!ss.has(x.id)));
+    }
+    persist();renderAll();
+  }catch(e){doc=null}
+}
+
+function renderCats(){
+  $("#cats").innerHTML=CATS.map(c=>`<button class="chip ${c[0]===cat?"on":""}" data-c="${c[0]}">${c[1]} ${c[0]}</button>`).join("");
+}
+function renderAll(){
+  items.sort((a,b)=>b.ts-a.ts);
+  const tk=dayKey(Date.now()),t=items.filter(x=>dayKey(x.ts)===tk);
+  $("#today").textContent=money(t.reduce((s,x)=>s+x.amt,0));
+  $("#todayn").textContent=t.length+(t.length===1?" expense":" expenses")+" today";
+  $("#places").innerHTML=[...new Set(items.map(x=>x.where).filter(Boolean))].slice(0,30).map(p=>`<option value="${esc(p)}">`).join("");
+  // history
+  const g={};items.forEach(x=>(g[dayKey(x.ts)]=g[dayKey(x.ts)]||[]).push(x));
+  $("#list").innerHTML=items.length?Object.keys(g).sort().reverse().map(k=>{
+    const d=new Date(k+"T00:00:00"),sum=g[k].reduce((s,x)=>s+x.amt,0);
+    return `<div class="day"><span>${d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})}</span><span>${money(sum)}</span></div><div class="card" style="padding:4px 16px">`+
+    g[k].map(x=>`<div class="item"><div class="ico">${icon(x.cat)}</div><div class="m"><b>${esc(x.where||x.cat)}</b><span class="mu">${esc(x.cat)} · ${new Date(x.ts).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})}${x.note?" · "+esc(x.note):""}${x.geo?` · <a href="https://maps.apple.com/?ll=${+x.geo[0]},${+x.geo[1]}" style="color:var(--ac)">📍map</a>`:""}</span></div><b>${money(x.amt)}</b><button class="del" data-d="${esc(x.id)}" aria-label="Delete">✕</button></div>`).join("")+`</div>`;
+  }).join(""):`<div class="card mu">No expenses yet. Add your first one.</div>`;
+  renderIns();
+}
+function bars(map,el){
+  const e=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,8),mx=e.length?e[0][1]:1;
+  el.innerHTML=e.length?e.map(([k,v])=>`<div style="margin-top:10px"><div class="row"><span>${esc(k)}</span><span style="text-align:right">${money(v)}</span></div><div class="bar" style="width:${Math.max(3,v/mx*100)}%"></div></div>`).join(""):`<div class="mu" style="margin-top:8px">No data</div>`;
+}
+function renderIns(){
+  const r=+$("#range").value,from=r?Date.now()-r*864e5:0,s=items.filter(x=>x.ts>=from);
+  const tot=s.reduce((a,x)=>a+x.amt,0);
+  $("#tot").textContent=money(tot);
+  const days=r||Math.max(1,Math.ceil((Date.now()-(s.length?Math.min(...s.map(x=>x.ts)):Date.now()))/864e5)||1);
+  $("#avg").textContent=s.length?"About "+money(tot/days)+" per day · "+s.length+" expenses":"";
+  const c={},p={};s.forEach(x=>{c[icon(x.cat)+" "+x.cat]=(c[icon(x.cat)+" "+x.cat]||0)+x.amt;if(x.where)p[x.where]=(p[x.where]||0)+x.amt});
+  bars(c,$("#bycat"));bars(p,$("#byplace"));
+  const ts=sessions.filter(x=>x.start>=from),tm={};ts.forEach(x=>{const k=fico(x.field)+" "+x.field;tm[k]=(tm[k]||0)+(x.end-x.start)});
+  $("#ttot").textContent=ts.length?"Total tracked: "+dur(ts.reduce((a,x)=>a+x.end-x.start,0)):"";
+  barsT(tm,$("#bytime"));renderTime();
+}
+
+const FIELDS=[["Study","📚"],["Coding","💻"],["Work","💼"],["Exercise","🏃"],["Social media","📱"],["Rest","😴"],["Family & friends","👥"],["Other","✨"]];
+let sessions=[],active=null,fld="Study",tick=null;
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const fico=f=>(FIELDS.find(x=>x[0]===f)||["","⏱️"])[1];
+const dur=ms=>{const m=Math.round(ms/60000);return m<60?m+"m":Math.floor(m/60)+"h "+pad(m%60)+"m"};
+const clock=ms=>{const s=Math.floor(ms/1000);return pad(Math.floor(s/3600))+":"+pad(Math.floor(s/60)%60)+":"+pad(s%60)};
+function barsT(map,el){
+  const e=Object.entries(map).sort((a,b)=>b[1]-a[1]),mx=e.length?e[0][1]:1;
+  el.innerHTML=e.length?e.map(([k,v])=>`<div style="margin-top:10px"><div class="row"><span>${esc(k)}</span><span style="text-align:right">${dur(v)}</span></div><div class="bar" style="width:${Math.max(3,v/mx*100)}%"></div></div>`).join(""):`<div class="mu" style="margin-top:8px">No data</div>`;
+}
+function renderTime(){
+  const all=[...new Set(FIELDS.map(x=>x[0]).concat(sessions.map(x=>x.field),[fld]))];
+  $("#fields").innerHTML=all.map(f=>`<button class="chip ${f===fld?"on":""}" data-f="${esc(f)}">${fico(f)} ${esc(f)}</button>`).join("")+`<button class="chip" data-f="+">＋ New</button>`;
+  $("#tbtn").textContent=active?"Stop & save":"Start";
+  $("#tstate").textContent=active?"Tracking: "+active.field+(active.note?" · "+active.note:""):"What are you doing?";
+  clearInterval(tick);
+  const up=()=>{$("#tclock").textContent=active?clock(Date.now()-active.start):"00:00:00"};up();
+  if(active)tick=setInterval(up,1000);
+  const tk=dayKey(Date.now()),m={};
+  sessions.filter(x=>dayKey(x.start)===tk).forEach(x=>{const k=fico(x.field)+" "+x.field;m[k]=(m[k]||0)+(x.end-x.start)});
+  if(active){const k=fico(active.field)+" "+active.field;m[k]=(m[k]||0)+(Date.now()-active.start)}
+  barsT(m,$("#ttoday"));
+  const rec=sessions.slice().sort((a,b)=>b.start-a.start).slice(0,10);
+  $("#tlist").innerHTML=rec.length?rec.map(x=>`<div class="item"><div class="ico">${fico(x.field)}</div><div class="m"><b>${esc(x.field)}</b><span class="mu">${new Date(x.start).toLocaleDateString(undefined,{month:"short",day:"numeric"})} · ${new Date(x.start).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})}${x.note?" · "+esc(x.note):""}</span></div><b>${dur(x.end-x.start)}</b><button class="del" data-s="${esc(x.id)}" aria-label="Delete">✕</button></div>`).join(""):`<div class="mu" style="margin-top:8px">No sessions yet</div>`;
+}
+$("#fields").onclick=e=>{
+  const b=e.target.closest("[data-f]");if(!b||active)return;
+  let f=b.dataset.f;
+  if(f==="+"){f=(prompt("New field name")||"").trim();if(!f)return}
+  fld=f;renderTime();
+};
+$("#tbtn").onclick=()=>{
+  if(active){const end=Date.now();if(end-active.start>=1000)sessions.push({id:uid(),field:active.field,note:active.note,start:active.start,end});active=null}
+  else{active={field:fld,note:$("#tnote").value.trim(),start:Date.now()};$("#tnote").value=""}
+  persist();renderIns();
+};
+$("#madd").onclick=()=>{
+  const m=parseInt($("#mmin").value,10);if(!(m>0))return;
+  const end=Date.now();sessions.push({id:uid(),field:fld,note:"",start:end-m*60000,end});
+  $("#mmin").value="";persist();renderIns();
+};
+$("#tlist").onclick=e=>{
+  const b=e.target.closest("[data-s]");
+  if(b&&confirm("Delete this session?")){sessions=sessions.filter(x=>x.id!==b.dataset.s);persist();renderIns()}
+};
+$("#cats").onclick=e=>{const b=e.target.closest("[data-c]");if(b){cat=b.dataset.c;renderCats()}};
+$("#gps").onclick=()=>{
+  const o=$("#gpsout");
+  if(!navigator.geolocation){o.textContent="Location is not available here.";return}
+  o.textContent="Finding you…";
+  navigator.geolocation.getCurrentPosition(p=>{geo=[+p.coords.latitude.toFixed(5),+p.coords.longitude.toFixed(5)];o.textContent="📍 Location tagged ("+geo.join(", ")+")"},()=>{o.textContent="Couldn’t get location. Type the place instead."},{timeout:10000});
+};
+$("#save").onclick=()=>{
+  const a=parseFloat($("#amt").value);
+  if(!(a>0)){$("#amt").focus();return}
+  const ts=new Date($("#when").value).getTime()||Date.now();
+  items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),amt:a,cat,where:$("#where").value.trim(),note:$("#note").value.trim(),ts,geo});
+  persist();renderAll();
+  $("#amt").value="";$("#where").value="";$("#note").value="";$("#when").value=nowLocal();geo=null;$("#gpsout").textContent="Saved ✓";
+  if(navigator.vibrate)navigator.vibrate(10);
+};
+$("#list").onclick=e=>{
+  const b=e.target.closest("[data-d]");
+  if(b&&confirm("Delete this expense?")){items=items.filter(x=>x.id!==b.dataset.d);persist();renderAll()}
+};
+$("#range").onchange=renderIns;
+$("#csv").onclick=async()=>{
+  const q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
+  const rows=[["date","amount","category","where","note","lat","lng"]].concat(items.map(x=>[new Date(x.ts).toISOString(),x.amt,x.cat,x.where,x.note,x.geo?x.geo[0]:"",x.geo?x.geo[1]:""]));
+  const data=rows.map(r=>r.map(q).join(",")).join("\n");
+  const tdata=[["start","end","minutes","field","note"]].concat(sessions.map(x=>[new Date(x.start).toISOString(),new Date(x.end).toISOString(),Math.round((x.end-x.start)/60000),x.field,x.note])).map(r=>r.map(q).join(",")).join("\n");
+  try{if(navigator.canShare){const fs=[new File([data],"spending.csv",{type:"text/csv"}),new File([tdata],"time.csv",{type:"text/csv"})];if(navigator.canShare({files:fs})){await navigator.share({files:fs});return}}}catch(e){if(e&&e.name==="AbortError")return}
+  try{const d=await claude.use("downloads");if(d){await d.save({filename:"spending.csv",data});await d.save({filename:"time.csv",data:tdata});return}}catch(e){}
+  alert("Export isn’t available in this view.");
+};
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));
+  ["add","hist","time","ins"].forEach(s=>$("#"+s).classList.toggle("hide",s!==b.dataset.t));
+  window.scrollTo(0,0);
+});
+
+items=loadLocal();
+try{sessions=JSON.parse(localStorage.getItem("spend.sessions.v1")||"[]");active=JSON.parse(localStorage.getItem("spend.active.v1")||"null")}catch(e){}
+$("#when").value=nowLocal();
+renderCats();renderAll();
+initDb();
+</script>
+</body>
+</html>
